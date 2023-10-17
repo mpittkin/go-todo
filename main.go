@@ -27,7 +27,7 @@ func main() {
 	}
 	fmt.Println("Starting at " + absPath)
 
-	var todos []todo.Todo
+	var result []todo.Todo
 
 	// Walk through the files and process all .go files
 	err = fs.WalkDir(os.DirFS(absPath), ".", func(path string, d fs.DirEntry, err error) error {
@@ -51,12 +51,12 @@ func main() {
 			log.Fatalf("parse %s: %s", path, err)
 		}
 
-		todos = append(todos, todos...)
+		result = append(result, todos...)
 
 		return nil
 	})
 	if err != nil {
 		log.Fatalf("walk path %s: %s", absPath, err)
 	}
-	output.ToConsole(todos)
+	output.ToConsole(result)
 }
