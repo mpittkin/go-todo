@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/mpittkin/go-todo/output"
 	"github.com/mpittkin/go-todo/todo"
@@ -10,7 +11,49 @@ import (
 	"path/filepath"
 )
 
+type config struct {
+	RootPath        string
+	OutputType      string
+	SlackWebhookURL string
+}
+
+const (
+	defaultRootPath        = "."
+	defaultOutputType      = "console"
+	defaultSlackWebhookURL = ""
+)
+
 func main() {
+	cfg := config{
+		RootPath:        defaultRootPath,
+		OutputType:      defaultOutputType,
+		SlackWebhookURL: defaultSlackWebhookURL,
+	}
+	if r := os.Getenv("GOTODO_ROOT_PATH"); r != "" {
+		cfg.RootPath = r
+	}
+	if o := os.Getenv("GOTODO_OUTPUT_TYPE"); o != "" {
+		cfg.OutputType = o
+	}
+	if u := os.Getenv("GOTODO_SLACK_URL"); u != "" {
+		cfg.SlackWebhookURL = u
+	}
+	pathFlag := flag.String("root-path", "", "the root path from which directories will be traversed looking for files to parse")
+	outputFlag := flag.String("output-type", "", "the output type (console, json, or slack-webhook")
+	webhookFlag := flag.String("slack-webhook-url", "", "when output type is set to 'slack-webhook' defines the url to send the POST request")
+	flag.Parse()
+	if *pathFlag != "" {
+		cfg.RootPath = *pathFlag
+	}
+	if *outputFlag != "" {
+		cfg.OutputType = *outputFlag
+	}
+	if *webhookFlag != "" {
+		cfg.SlackWebhookURL = *webhookFlag
+	}
+
+	// Output type (defaults to console)
+	// Slack webhook URL (only used for that output type)
 
 	// Set root path to start parsing
 	rootPath := "."
