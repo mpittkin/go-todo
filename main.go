@@ -15,7 +15,13 @@ type config struct {
 	RootPath        string
 	OutputType      string
 	SlackWebhookURL string
+	RepoTitle       string
 }
+
+const (
+	outTypeConsole      = "console"
+	outTypeSlackWebhook = "slack-webhook"
+)
 
 const (
 	defaultRootPath        = "."
@@ -38,9 +44,13 @@ func main() {
 	if u := os.Getenv("GOTODO_SLACK_URL"); u != "" {
 		cfg.SlackWebhookURL = u
 	}
+	cfg.RepoTitle = os.Getenv("GOTODO_REPO_TITLE")
+
 	pathFlag := flag.String("root-path", "", "the root path from which directories will be traversed looking for files to parse")
 	outputFlag := flag.String("output-type", "", "the output type (console, json, or slack-webhook")
 	webhookFlag := flag.String("slack-webhook-url", "", "when output type is set to 'slack-webhook' defines the url to send the POST request")
+	titleFlag := flag.String("repo-title", "", "when output type is set to slack-webhook, this is included in the report to indicate to the reader the source of the todos")
+
 	flag.Parse()
 	if *pathFlag != "" {
 		cfg.RootPath = *pathFlag
@@ -51,11 +61,10 @@ func main() {
 	if *webhookFlag != "" {
 		cfg.SlackWebhookURL = *webhookFlag
 	}
+	if *titleFlag != "" {
+		cfg.SlackWebhookURL = *titleFlag
+	}
 
-	// Output type (defaults to console)
-	// Slack webhook URL (only used for that output type)
-
-	// Set root path to start parsing
 	rootPath := "."
 	if len(os.Args) > 1 {
 		rootPath = os.Args[1]
@@ -87,8 +96,6 @@ func main() {
 			return nil
 		}
 
-		fmt.Println("Found go file: " + path)
-
 		todos, err := todo.ParseGo(path)
 		if err != nil {
 			log.Fatalf("parse %s: %s", path, err)
@@ -101,5 +108,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("walk path %s: %s", absPath, err)
 	}
-	output.ToConsole(result)
+
+	switch cfg.OutputType {
+	case outTypeConsole:
+		output.ToConsole(result)
+	case outTypeSlackWebhook:
+		if err := output.ToSlackWebhook(result, cfg.SlackWebhookURL, cfg.RepoTitle); err != nil {
+			log.Fatalf("error posting result to slack webhook: %s", err)
+		}
+	default:
+		log.Printf("invalid output type %s\n", cfg.OutputType)
+	}
 }
