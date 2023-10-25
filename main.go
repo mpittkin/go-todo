@@ -116,6 +116,7 @@ func main() {
 		if err := output.ToSlackWebhook(result, cfg.SlackWebhookURL, cfg.RepoTitle); err != nil {
 			log.Fatalf("error posting result to slack webhook: %s", err)
 		}
+		fmt.Println("Todo report sent successfully to Slack")
 	default:
 		log.Printf("invalid output type %s\n", cfg.OutputType)
 	}
