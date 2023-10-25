@@ -47,7 +47,7 @@ func main() {
 	cfg.RepoTitle = os.Getenv("GOTODO_REPO_TITLE")
 
 	pathFlag := flag.String("root-path", "", "the root path from which directories will be traversed looking for files to parse")
-	outputFlag := flag.String("output-type", "", "the output type (console, json, or slack-webhook")
+	outputFlag := flag.String("output-type", "", "the output type ('console' or 'slack-webhook'")
 	webhookFlag := flag.String("slack-webhook-url", "", "when output type is set to 'slack-webhook' defines the url to send the POST request")
 	titleFlag := flag.String("repo-title", "", "when output type is set to slack-webhook, this is included in the report to indicate to the reader the source of the todos")
 
@@ -65,17 +65,9 @@ func main() {
 		cfg.SlackWebhookURL = *titleFlag
 	}
 
-	rootPath := "."
-	if len(os.Args) > 1 {
-		rootPath = os.Args[1]
-		if err := os.Chdir(rootPath); err != nil {
-			log.Fatalf("Unable to change directory to %s\n", rootPath)
-		}
-	}
-
-	absPath, err := filepath.Abs(rootPath)
+	absPath, err := filepath.Abs(cfg.RootPath)
 	if err != nil {
-		log.Fatalf("Unable to convert path '%s' to absolute path: %s", rootPath, err)
+		log.Fatalf("Unable to convert path '%s' to absolute path: %s", cfg.RootPath, err)
 	}
 	fmt.Println("Starting at " + absPath)
 
