@@ -73,6 +73,10 @@ func main() {
 
 	var result []todo.Todo
 
+	if err := os.Chdir(absPath); err != nil {
+		panic(err)
+	}
+
 	// Walk through the files and process all .go files
 	err = fs.WalkDir(os.DirFS(absPath), ".", func(path string, d fs.DirEntry, err error) error {
 		// Skip walking .git because it contains so many small files it slows down the program substantially

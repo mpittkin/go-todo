@@ -1,13 +1,14 @@
 package output
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/mpittkin/go-todo/todo"
 	"io"
 	"log"
 	"net/http"
 	"sort"
-	"strings"
 )
 
 type AuthorTodos struct {
@@ -37,7 +38,7 @@ func ToSlackWebhook(todos []todo.Todo, webhookUrl string, repo string) error {
 
 	message := fmt.Sprintf(`
 Todo Report: %s
-Total Todos: %d\n
+Total Todos: %d
 `, repo, len(todos))
 
 	for _, auth := range byAuthorSl {
@@ -46,15 +47,24 @@ Total Todos: %d\n
 `, auth.AuthorMail)
 		for _, td := range auth.Todos {
 
-			authorBlock += fmt.Sprintf("%s:%d (%v) `%s`\\n\n", td.Path, td.Line, td.Time.Format("2006-01-02"), td.Text)
+			authorBlock += fmt.Sprintf("%s:%d (%v) `%s`\n", td.Path, td.Line, td.Time.Format("2006-01-02"), td.Text)
 		}
 
 		message += authorBlock
 	}
 
-	body := fmt.Sprintf(`{ "text": "%s"}`, message)
+	slackMsgBody := struct {
+		Text string `json:"text"`
+	}{
+		Text: message,
+	}
 
-	if err := PostToWebhook(webhookUrl, strings.NewReader(body)); err != nil {
+	body, err := json.Marshal(slackMsgBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal slack message: %w", err)
+	}
+
+	if err := PostToWebhook(webhookUrl, bytes.NewReader(body)); err != nil {
 		return fmt.Errorf("post to slack webhook %s: %w", webhookUrl, err)
 	}
 
@@ -78,7 +88,12 @@ func PostToWebhook(url string, body io.Reader) error {
 		}
 	}()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("http response error %s", resp.Status)
+		errBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic("failed to read response body: " + err.Error())
+		}
+		fmt.Println(string(errBody))
+		return fmt.Errorf("http response error: %s", resp.Status)
 	}
 	return nil
 }
